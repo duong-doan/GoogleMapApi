@@ -9,7 +9,7 @@ import ReactMapGL, {
   GeolocateControl,
   FullscreenControl,
 } from "react-map-gl";
-import ArcLayerDemo from "../layer";
+import ArcLayerDemo from "../Layer";
 import * as data from "../../data.json";
 import * as d3 from "d3-ease";
 
