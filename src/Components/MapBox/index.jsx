@@ -9,9 +9,12 @@ import ReactMapGL, {
   GeolocateControl,
   FullscreenControl,
 } from "react-map-gl";
-import ArcLayerDemo from "../Layer";
+import ArcLayer from "../ArcLayer/index";
 import * as data from "../../data.json";
 import * as d3 from "d3-ease";
+
+const REACT_APP_MAPBOX_TOKEN =
+  "pk.eyJ1IjoiZHVvbmdkb2FuIiwiYSI6ImNrcW0wZ2R3cDByZnkycW5zYWpnaXd4dmIifQ.o8veIVT3DXhjcK2C0OtX8w";
 
 const MapBox = () => {
   const fullscreenControlStyle = {
@@ -230,7 +233,7 @@ const MapBox = () => {
       </form>
       <ReactMapGL
         {...viewport}
-        mapboxApiAccessToken={process.env.REACT_APP_MAPBOX_TOKEN}
+        mapboxApiAccessToken={REACT_APP_MAPBOX_TOKEN}
         mapStyle="mapbox://styles/mapbox/dark-v10"
         onViewportChange={(viewChange) => {
           setViewport(viewChange);
@@ -242,7 +245,7 @@ const MapBox = () => {
       >
         {/* layer drones path demo */}
         {dataLayer.length !== 0 && (
-          <ArcLayerDemo viewState={viewport} data={dataLayer} id={idLayer} />
+          <ArcLayer viewState={viewport} data={dataLayer} id={idLayer} />
         )}
 
         {/* maker location */}

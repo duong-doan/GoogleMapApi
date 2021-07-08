@@ -9,6 +9,8 @@ import {
 } from "@react-google-maps/api";
 import * as data from "../../data.json";
 
+const REACT_APP_GOOGLE_MAPS_API_KEY = "AIzaSyDYMKCueUCarUM-lUfGqurruHvSz_3QkyM";
+
 const GoogleMapApi = () => {
   const [dataMarker, setDataMarker] = useState(data.default.features);
   const [center, setCenter] = useState({
@@ -17,7 +19,7 @@ const GoogleMapApi = () => {
   });
   const [selectMaker, setSelectMaker] = useState(null);
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+    googleMapsApiKey: REACT_APP_GOOGLE_MAPS_API_KEY,
   });
   const mapContainerStyle = {
     width: "100vw",
@@ -26,6 +28,7 @@ const GoogleMapApi = () => {
 
   const mapRef = useRef();
   const markerRef = useRef();
+  const infoWindowRef = useRef();
   const onMapLoad = useCallback((map) => {
     mapRef.current = map;
   }, []);
@@ -56,6 +59,25 @@ const GoogleMapApi = () => {
     });
   };
 
+  const handleClickFindLocation = () => {
+    const infoWin = new window.google.maps.InfoWindow();
+    window.navigator.geolocation.getCurrentPosition((pos) => {
+      console.log(pos);
+      const positionLocation = {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+      };
+      setCenter(positionLocation);
+      infoWin.setPosition(positionLocation);
+      infoWin.setContent("your location");
+      infoWin.open(mapRef.current);
+      new window.google.maps.Marker({
+        position: positionLocation,
+        map: mapRef.current,
+      });
+    });
+  };
+
   useEffect(() => {
     const escapeKey = (e) => {
       if (e.key === "Escape") {
@@ -78,10 +100,17 @@ const GoogleMapApi = () => {
           center={center}
           onLoad={onMapLoad}
           onClick={handleClickMap}
+          ref={mapRef.current}
         >
+          <button
+            className="btn-location"
+            onClick={handleClickFindLocation}
+            style={{ position: "relative" }}
+          >
+            Find location
+          </button>
           {dataMarker.map((park) => (
             <Marker
-              ref={markerRef.current}
               key={park.properties.PARK_ID}
               position={{
                 lat: park.geometry.coordinates[1],
@@ -92,6 +121,7 @@ const GoogleMapApi = () => {
           ))}
           {selectMaker && (
             <InfoWindow
+              ref={infoWindowRef}
               position={{
                 lat: selectMaker.geometry.coordinates[1],
                 lng: selectMaker.geometry.coordinates[0],

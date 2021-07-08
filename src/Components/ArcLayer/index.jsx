@@ -12,16 +12,15 @@ const ArcLayerDemo = ({ viewState, data, id }) => {
     getSourceColor: (d) => [Math.sqrt(d.inbound), 140, 0],
     getTargetColor: (d) => [Math.sqrt(d.outbound), 140, 0],
   });
+
   return (
-    data.length !== 0 && (
-      <DeckGL
-        viewState={viewState}
-        layers={[layer]}
-        getTooltip={({ object }) =>
-          object && `${object.from.name} to ${object.to.name}`
-        }
-      />
-    )
+    <DeckGL
+      viewState={viewState}
+      layers={[layer]}
+      getTooltip={({ object }) =>
+        object && `${object.from.name} to ${object.to.name}`
+      }
+    />
   );
 };
 

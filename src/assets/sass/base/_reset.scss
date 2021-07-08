@@ -1,0 +1,28 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+ul {
+  list-style: none;
+  padding-left: unset;
+}
+
+a {
+  text-decoration: none;
+  &:hover {
+    text-decoration: none;
+  }
+}
+
+button {
+  outline: 0;
+  cursor: pointer;
+  &:disabled {
+    pointer-events: none;
+  }
+}
+
+input {
+  outline: 0;
+}
