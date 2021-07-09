@@ -20,6 +20,9 @@ const App = () => {
       {/* <Chart />
       <ChartStock />
       <ChartColumn /> */}
+
+      <input type="button" id="routebtn" value="route" />
+      <div id="map-canvas"></div>
     </div>
   );
 };

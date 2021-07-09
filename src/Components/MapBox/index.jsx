@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import ReactMapGL, {
   Marker,
@@ -8,6 +8,8 @@ import ReactMapGL, {
   FlyToInterpolator,
   GeolocateControl,
   FullscreenControl,
+  Source,
+  Layer,
 } from "react-map-gl";
 import ArcLayer from "../ArcLayer/index";
 import * as data from "../../data.json";
@@ -37,19 +39,31 @@ const MapBox = () => {
     top: 10,
   };
 
+  const skyLayer = {
+    id: "sky",
+    type: "sky",
+    paint: {
+      "sky-type": "atmosphere",
+      "sky-atmosphere-sun": [0.0, 0.0],
+      "sky-atmosphere-sun-intensity": 15,
+    },
+  };
+
   const [viewport, setViewport] = useState({
-    latitude: 16,
-    longitude: 108,
+    latitude: 45,
+    longitude: 70,
     zoom: 10,
     width: "100vw",
     height: "100vh",
+    bearing: 80,
+    pitch: 80,
   });
-
-  const refMap = useRef();
 
   const [dataMaker, setDataMaker] = useState(data.default);
 
   const [selectItem, setSelectItem] = useState(null);
+
+  const [view3D, setView3D] = useState(false);
 
   const [value, setValue] = useState({
     cityFrom: "",
@@ -124,43 +138,15 @@ const MapBox = () => {
     setIdLayer(`arc-layer-${dataLayer.length}`);
   };
 
+  const mapRef = useRef(null);
+
+  const onMapLoad = useCallback((evt) => {
+    const map = evt.target;
+    mapRef.current = evt.target;
+  }, []);
+
   const handleCreateDronesPath = (e) => {
-    console.log(
-      `coordinates: \n lng : ${viewport.longitude} \n lat : ${viewport.latitude}`,
-    );
-
-    const dataLayerItem = {
-      inbound: 500,
-      outbound: 500,
-      from: {
-        name: "Viet Nam",
-        coordinates: [108, 16],
-      },
-      to: {
-        name: "Australian",
-        coordinates: [130, -20],
-      },
-    };
-
-    let count = 0;
-    let flag = false;
-    if (count === 0) {
-      dataLayerItem.from.coordinates[0] = viewport.longitude;
-      dataLayerItem.from.coordinates[1] = viewport.latitude;
-      console.log("one");
-      flag = true;
-    } else if (count === 1 && flag) {
-      dataLayerItem.to.coordinates[0] = viewport.longitude;
-      dataLayerItem.to.coordinates[1] = viewport.latitude;
-      console.log("second");
-      setDataLayer((prev) => {
-        prev.push(dataLayerItem);
-        return prev;
-      });
-      count = -1;
-      flag = false;
-    }
-    count += 1;
+    console.log(`coordinates: \n lng : ${e.lngLat[0]} \n lat : ${e.lngLat[1]}`);
   };
 
   return (
@@ -233,8 +219,9 @@ const MapBox = () => {
       </form>
       <ReactMapGL
         {...viewport}
+        mapStyle="mapbox://styles/mapbox/satellite-v9"
         mapboxApiAccessToken={REACT_APP_MAPBOX_TOKEN}
-        mapStyle="mapbox://styles/mapbox/dark-v10"
+        onLoad={onMapLoad}
         onViewportChange={(viewChange) => {
           setViewport(viewChange);
         }}
@@ -283,6 +270,37 @@ const MapBox = () => {
             </Popup>
           </>
         )}
+
+        {/* 3D */}
+        <Source
+          id="mapbox-dem"
+          type="raster-dem"
+          url="mapbox://mapbox.mapbox-terrain-dem-v1"
+          tileSize={512}
+          maxzoom={14}
+        />
+        {!view3D ? <Layer {...skyLayer} /> : null}
+
+        <button
+          className="btn-3D"
+          onClick={() => {
+            setView3D((prevState) => {
+              if (!prevState) {
+                mapRef.current.setTerrain({
+                  source: "mapbox-dem",
+                  exaggeration: 1.5,
+                });
+              } else {
+                mapRef.current.setTerrain({
+                  source: "mapbox",
+                });
+              }
+              return !prevState;
+            });
+          }}
+        >
+          3D
+        </button>
 
         {/* navigation scale zoom in/out */}
         <NavigationControl style={navControlStyle} />

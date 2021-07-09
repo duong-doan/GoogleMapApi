@@ -6,12 +6,15 @@ import {
   InfoWindow,
   Polyline,
   Polygon,
+  DirectionsRenderer,
 } from "@react-google-maps/api";
+import SearchPlace from "./SearchPlace";
 import * as data from "../../data.json";
 
-const REACT_APP_GOOGLE_MAPS_API_KEY = "AIzaSyDYMKCueUCarUM-lUfGqurruHvSz_3QkyM";
+const REACT_APP_GOOGLE_MAPS_API_KEY = "AIzaSyDG6pKMMvNJ2jumRlHiU-n_x14RERkfKrQ";
 
 const GoogleMapApi = () => {
+  const libraries = ["places"];
   const [dataMarker, setDataMarker] = useState(data.default.features);
   const [center, setCenter] = useState({
     lat: 45,
@@ -20,17 +23,22 @@ const GoogleMapApi = () => {
   const [selectMaker, setSelectMaker] = useState(null);
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: REACT_APP_GOOGLE_MAPS_API_KEY,
+    libraries,
   });
+  const [directions, setDirections] = useState(null);
   const mapContainerStyle = {
     width: "100vw",
     height: "100vh",
   };
 
+  let directionsService;
+  let destination = { lat: 41.756795, lng: -78.954298 };
+
   const mapRef = useRef();
-  const markerRef = useRef();
-  const infoWindowRef = useRef();
   const onMapLoad = useCallback((map) => {
     mapRef.current = map;
+    directionsService = new window.google.maps.DirectionsService();
+    changeDirection(center, destination);
   }, []);
 
   const handleClickMap = (e) => {
@@ -78,6 +86,24 @@ const GoogleMapApi = () => {
     });
   };
 
+  const changeDirection = (origin, destination) => {
+    directionsService.route(
+      {
+        origin: origin,
+        destination: destination,
+        travelMode: window.google.maps.TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (status === window.google.maps.DirectionsStatus.OK) {
+          //changing the state of directions to the result of direction service
+          setDirections(result);
+        } else {
+          console.error(`error fetching directions ${result}`);
+        }
+      },
+    );
+  };
+
   useEffect(() => {
     const escapeKey = (e) => {
       if (e.key === "Escape") {
@@ -101,12 +127,14 @@ const GoogleMapApi = () => {
           onLoad={onMapLoad}
           onClick={handleClickMap}
           ref={mapRef.current}
+          mapTypeId="satellite"
         >
           <button
             className="btn-location"
             onClick={handleClickFindLocation}
             style={{ position: "relative" }}
           >
+            <i className="fas fa-search-location"></i>
             Find location
           </button>
           {dataMarker.map((park) => (
@@ -121,7 +149,6 @@ const GoogleMapApi = () => {
           ))}
           {selectMaker && (
             <InfoWindow
-              ref={infoWindowRef}
               position={{
                 lat: selectMaker.geometry.coordinates[1],
                 lng: selectMaker.geometry.coordinates[0],
@@ -135,6 +162,12 @@ const GoogleMapApi = () => {
                 <h1>{`lng: ${selectMaker.geometry.coordinates[0]}`}</h1>
               </div>
             </InfoWindow>
+          )}
+
+          <SearchPlace />
+
+          {directions !== null && (
+            <DirectionsRenderer directions={directions} />
           )}
 
           <Polyline
