@@ -11,12 +11,17 @@ import ReactMapGL, {
   Source,
   Layer,
 } from "react-map-gl";
+
+import useSwr from "swr";
+import useSupercluster from "use-supercluster";
 import ArcLayer from "../ArcLayer/index";
-import * as data from "../../data.json";
 import * as d3 from "d3-ease";
 
 const REACT_APP_MAPBOX_TOKEN =
   "pk.eyJ1IjoiZHVvbmdkb2FuIiwiYSI6ImNrcW0wZ2R3cDByZnkycW5zYWpnaXd4dmIifQ.o8veIVT3DXhjcK2C0OtX8w";
+
+const API_URL_CLUSTER =
+  "https://data.police.uk/api/crimes-street/all-crime?lat=52.629729&lng=-1.131592&date=2019-10";
 
 const MapBox = () => {
   const fullscreenControlStyle = {
@@ -49,17 +54,15 @@ const MapBox = () => {
     },
   };
 
+  const [originMap, setOriginMap] = useState(null);
+
   const [viewport, setViewport] = useState({
-    latitude: 45,
-    longitude: 70,
+    latitude: 52.63,
+    longitude: -1,
     zoom: 10,
     width: "100vw",
     height: "100vh",
-    bearing: 80,
-    pitch: 80,
   });
-
-  const [dataMaker, setDataMaker] = useState(data.default);
 
   const [selectItem, setSelectItem] = useState(null);
 
@@ -74,6 +77,7 @@ const MapBox = () => {
     latTo: "",
   });
 
+  const [idLayer, setIdLayer] = useState("arc");
   const [dataLayer, setDataLayer] = useState([
     {
       inbound: 500,
@@ -89,7 +93,44 @@ const MapBox = () => {
     },
   ]);
 
-  const [idLayer, setIdLayer] = useState("arc");
+  const mapRef = useRef();
+
+  const fetcher = (...args) =>
+    fetch(...args).then((response) => response.json());
+
+  const { data, error } = useSwr(API_URL_CLUSTER, { fetcher });
+
+  const crimes = data && !error ? data.slice(0, 200) : [];
+
+  // get points
+  const points = crimes.map((crime) => ({
+    type: "Feature",
+    properties: {
+      cluster: false,
+      crimeId: crime.id,
+      category: crime.category,
+    },
+    geometry: {
+      type: "Point",
+      coordinates: [
+        parseFloat(crime.location.longitude),
+        parseFloat(crime.location.latitude),
+      ],
+    },
+  }));
+
+  // get bounds
+  const bounds = mapRef.current
+    ? mapRef.current.getMap().getBounds().toArray().flat()
+    : null;
+
+  // get cluster
+  const { clusters, supercluster } = useSupercluster({
+    points,
+    bounds,
+    zoom: viewport.zoom,
+    options: { radius: 75, maxZoom: 20 },
+  });
 
   useEffect(() => {
     const listener = (e) => {
@@ -104,7 +145,9 @@ const MapBox = () => {
     };
   });
 
-  useEffect(() => {}, [viewport]);
+  const onMapLoad = useCallback((map) => {
+    setOriginMap(map.target);
+  });
 
   const handleSubmitForm = (e) => {
     e.preventDefault();
@@ -138,16 +181,39 @@ const MapBox = () => {
     setIdLayer(`arc-layer-${dataLayer.length}`);
   };
 
-  const mapRef = useRef(null);
+  const handleClickClusterMarker = (cluster, lat, lng) => {
+    const expansionZoom = Math.min(
+      supercluster.getClusterExpansionZoom(cluster.id),
+      20,
+    );
 
-  const onMapLoad = useCallback((evt) => {
-    const map = evt.target;
-    mapRef.current = evt.target;
-  }, []);
-
-  const handleCreateDronesPath = (e) => {
-    console.log(`coordinates: \n lng : ${e.lngLat[0]} \n lat : ${e.lngLat[1]}`);
+    setViewport({
+      ...viewport,
+      latitude: lat,
+      longitude: lng,
+      zoom: expansionZoom,
+    });
   };
+
+  const handleClickBtn3D = () => {
+    setView3D((prevState) => {
+      if (!prevState) {
+        originMap.setTerrain({
+          source: "mapbox-dem",
+          exaggeration: 1.5,
+        });
+      } else {
+        originMap.setTerrain({
+          source: "mapbox",
+        });
+      }
+      return !prevState;
+    });
+  };
+
+  // const handleCreateDronesPath = (e) => {
+  //   console.log(`coordinates: \n lng : ${e.lngLat[0]} \n lat : ${e.lngLat[1]}`);
+  // };
 
   return (
     <>
@@ -219,16 +285,21 @@ const MapBox = () => {
       </form>
       <ReactMapGL
         {...viewport}
+        ref={mapRef}
         mapStyle="mapbox://styles/mapbox/satellite-v9"
         mapboxApiAccessToken={REACT_APP_MAPBOX_TOKEN}
-        onLoad={onMapLoad}
         onViewportChange={(viewChange) => {
           setViewport(viewChange);
         }}
+        onLoad={onMapLoad}
         transitionDuration={300}
-        transitionInterpolator={new FlyToInterpolator()}
+        transitionInterpolator={
+          new FlyToInterpolator({
+            speed: 2,
+          })
+        }
         transitionEasing={d3.easePolyOut}
-        onClick={handleCreateDronesPath}
+        // onClick={handleCreateDronesPath}
       >
         {/* layer drones path demo */}
         {dataLayer.length !== 0 && (
@@ -236,39 +307,61 @@ const MapBox = () => {
         )}
 
         {/* maker location */}
-        {dataMaker.features.map((item) => (
-          <Marker
-            key={item.properties.PARK_ID}
-            latitude={item.geometry.coordinates[1]}
-            longitude={item.geometry.coordinates[0]}
-          >
-            <button
-              className="maker"
-              onClick={() => {
-                setSelectItem(item);
-              }}
-            >
-              <img src="" alt="" />
-            </button>
-          </Marker>
-        ))}
+        {clusters.map((cluster) => {
+          const [lng, lat] = cluster.geometry.coordinates;
+
+          if (cluster.properties.cluster) {
+            return (
+              <Marker
+                key={`cluster-${cluster.id}`}
+                latitude={lat}
+                longitude={lng}
+              >
+                <div
+                  className="cluster-marker"
+                  style={{
+                    width: `${
+                      10 + (cluster.properties.point_count / points.length) * 20
+                    }px`,
+                    height: `${
+                      10 + (cluster.properties.point_count / points.length) * 20
+                    }px`,
+                  }}
+                  onClick={() => handleClickClusterMarker(cluster, lat, lng)}
+                >
+                  {cluster.properties.point_count}
+                </div>
+              </Marker>
+            );
+          }
+
+          return (
+            <Marker key={cluster.id} latitude={lat} longitude={lng}>
+              <button
+                className="maker"
+                onClick={() => {
+                  setSelectItem(cluster);
+                }}
+              >
+                <i className="fas fa-street-view"></i>
+              </button>
+            </Marker>
+          );
+        })}
 
         {/* popup information */}
         {selectItem && (
-          <>
-            <Popup
-              latitude={selectItem.geometry.coordinates[1]}
-              longitude={selectItem.geometry.coordinates[0]}
-              onClose={() => {
-                setSelectItem(null);
-              }}
-            >
-              <div>
-                <h1>{selectItem.properties.NAME}</h1>
-                <p>{selectItem.properties.DESCRIPTIO}</p>
-              </div>
-            </Popup>
-          </>
+          <Popup
+            latitude={selectItem.geometry.coordinates[1]}
+            longitude={selectItem.geometry.coordinates[0]}
+            onClose={() => {
+              setSelectItem(null);
+            }}
+          >
+            <div>
+              <h1>Hello</h1>
+            </div>
+          </Popup>
         )}
 
         {/* 3D */}
@@ -281,24 +374,7 @@ const MapBox = () => {
         />
         {!view3D ? <Layer {...skyLayer} /> : null}
 
-        <button
-          className="btn-3D"
-          onClick={() => {
-            setView3D((prevState) => {
-              if (!prevState) {
-                mapRef.current.setTerrain({
-                  source: "mapbox-dem",
-                  exaggeration: 1.5,
-                });
-              } else {
-                mapRef.current.setTerrain({
-                  source: "mapbox",
-                });
-              }
-              return !prevState;
-            });
-          }}
-        >
+        <button className="btn-3D" onClick={handleClickBtn3D}>
           3D
         </button>
 

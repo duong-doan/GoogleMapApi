@@ -8,23 +8,23 @@ import {
   Polygon,
   DirectionsRenderer,
 } from "@react-google-maps/api";
-import SearchPlace from "./SearchPlace";
+import SearchPlace from "../../Components/SearchPlace";
 import * as data from "../../data.json";
 
 const REACT_APP_GOOGLE_MAPS_API_KEY = "AIzaSyDG6pKMMvNJ2jumRlHiU-n_x14RERkfKrQ";
 
 const GoogleMapApi = () => {
   const libraries = ["places"];
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: REACT_APP_GOOGLE_MAPS_API_KEY,
+    libraries,
+  });
   const [dataMarker, setDataMarker] = useState(data.default.features);
   const [center, setCenter] = useState({
     lat: 45,
     lng: -75,
   });
   const [selectMaker, setSelectMaker] = useState(null);
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: REACT_APP_GOOGLE_MAPS_API_KEY,
-    libraries,
-  });
   const [directions, setDirections] = useState(null);
   const mapContainerStyle = {
     width: "100vw",
@@ -70,7 +70,6 @@ const GoogleMapApi = () => {
   const handleClickFindLocation = () => {
     const infoWin = new window.google.maps.InfoWindow();
     window.navigator.geolocation.getCurrentPosition((pos) => {
-      console.log(pos);
       const positionLocation = {
         lat: pos.coords.latitude,
         lng: pos.coords.longitude,
@@ -150,7 +149,7 @@ const GoogleMapApi = () => {
           {selectMaker && (
             <InfoWindow
               position={{
-                lat: selectMaker.geometry.coordinates[1],
+                lat: selectMaker.geometry.coordinates[1] + 0.01,
                 lng: selectMaker.geometry.coordinates[0],
               }}
               onCloseClick={() => {
