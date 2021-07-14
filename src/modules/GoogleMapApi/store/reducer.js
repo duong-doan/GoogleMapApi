@@ -85,12 +85,12 @@ const reducerGoogleMap = (state = initState, action) => {
     //   square
 
     case types.CLICK_SQUARE_ACTION:
-      const toggleSquare = state.square.isSelected;
+      const toggleSquare = !state.square.isSelected;
       return {
         ...state,
         square: {
           ...state.square,
-          isSelected: !toggleSquare,
+          isSelected: toggleSquare,
         },
       };
 

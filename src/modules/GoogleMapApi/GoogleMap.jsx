@@ -113,27 +113,32 @@ const GoogleMapWrap = withScriptjs(
 
     const handleClickBtnSquare = () => {
       dispatch(clickSquareAction());
-      const drawingManager = new window.google.maps.drawing.DrawingManager({
-        drawingControl: true,
-        drawingControlOptions: {
-          position: window.google.maps.ControlPosition.TOP_CENTER,
-          drawingModes: [window.google.maps.drawing.OverlayType.RECTANGLE],
-        },
-      });
+      if (!getIsSelectedSquare) {
+        const drawingManager = new window.google.maps.drawing.DrawingManager({
+          drawingControlOptions: {
+            position: window.google.maps.ControlPosition.TOP_CENTER,
+            drawingModes: [window.google.maps.drawing.OverlayType.RECTANGLE],
+          },
+        });
 
-      drawingManager.setMap(
-        mapRef.current.context.__SECRET_MAP_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
-      );
+        drawingManager.setMap(
+          mapRef.current.context.__SECRET_MAP_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
+        );
 
-      new window.google.maps.event.addListener(
-        drawingManager,
-        "overlaycomplete",
-        function (event) {
-          event.overlay.set("editable", true);
-          event.overlay.set("draggable", true);
-          console.log(event.overlay);
-        },
-      );
+        new window.google.maps.event.addListener(
+          drawingManager,
+          "overlaycomplete",
+          function (event) {
+            event.overlay.set("editable", true);
+            event.overlay.set("draggable", true);
+            console.log(event.overlay);
+          },
+        );
+      } else {
+        window.google.maps.drawing.DrawingManager().setOptions({
+          drawingControl: false,
+        });
+      }
     };
 
     return (
