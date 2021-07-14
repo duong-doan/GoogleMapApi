@@ -14,4 +14,14 @@ const makeGetPolyline = () =>
     get(selectGoogleMap, "polyline"),
   );
 
-export { makeGetMarker, makeGetPolyline };
+const makeGetPolygon = () =>
+  createSelector(selectGoogleMap, (selectGoogleMap) =>
+    get(selectGoogleMap, "polygon"),
+  );
+
+const makeGetSquare = () =>
+  createSelector(selectGoogleMap, (selectGoogleMap) =>
+    get(selectGoogleMap, "square"),
+  );
+
+export { makeGetMarker, makeGetPolyline, makeGetPolygon, makeGetSquare };

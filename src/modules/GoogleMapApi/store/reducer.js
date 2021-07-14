@@ -6,12 +6,7 @@ export const initState = {
     isSelected: false,
   },
   polyline: {
-    data: [
-      { lat: -25, lng: 131 },
-      { lat: -25, lng: 130 },
-      { lat: -25, lng: 130 },
-      { lat: -24, lng: 130 },
-    ],
+    data: [],
     isSelected: false,
   },
   polygon: {
@@ -26,6 +21,7 @@ export const initState = {
 
 const reducerGoogleMap = (state = initState, action) => {
   switch (action.type) {
+    //   marker
     case types.CLICK_MARKER_ACTION:
       const toggleMarker = state.marker.isSelected;
       return {
@@ -45,6 +41,7 @@ const reducerGoogleMap = (state = initState, action) => {
         },
       };
 
+    //   polyline
     case types.CLICK_POLYLINE_ACTION:
       const togglePolyline = state.polyline.isSelected;
       return {
@@ -61,6 +58,48 @@ const reducerGoogleMap = (state = initState, action) => {
         polyline: {
           ...state.polyline,
           data: [...state.polyline.data, action.payload],
+        },
+      };
+
+    //   polygon
+
+    case types.CLICK_POLYGON_ACTION:
+      const togglePolygon = state.polygon.isSelected;
+      return {
+        ...state,
+        polygon: {
+          ...state.polygon,
+          isSelected: !togglePolygon,
+        },
+      };
+
+    case types.PUSH_POLYGON_ITEM:
+      return {
+        ...state,
+        polygon: {
+          ...state.polygon,
+          data: [...state.polygon.data, action.payload],
+        },
+      };
+
+    //   square
+
+    case types.CLICK_SQUARE_ACTION:
+      const toggleSquare = state.square.isSelected;
+      return {
+        ...state,
+        square: {
+          ...state.square,
+          isSelected: !toggleSquare,
+        },
+      };
+
+    case types.PUSH_SQUARE_ITEM:
+      return {
+        ...state,
+        square: {
+          ...state.square,
+          data: [...state.square.data, action.payload],
         },
       };
 

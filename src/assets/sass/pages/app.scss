@@ -1,7 +1,23 @@
+.edit {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%);
+  top: 10px;
+
+  button {
+    padding: 5px 10px;
+  }
+}
+
 .btn-marker,
-.btn-polyline {
+.btn-polyline,
+.btn-polygon,
+.btn-square {
   position: absolute;
   padding: 6px;
+  border-radius: 5px;
+  outline: none;
+  border: none;
 }
 
 .btn-marker {
@@ -20,6 +36,24 @@
     width: 100%;
     height: 100%;
   }
+}
+
+.btn-polygon {
+  top: 90px;
+  left: 10px;
+  width: 35px;
+  height: 35px;
+  img {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.btn-square {
+  top: 130px;
+  left: 10px;
+  width: 35px;
+  height: 35px;
 }
 
 .active {

@@ -27,3 +27,33 @@ export const pushPolylineItemAction = (data) => {
     payload: data,
   };
 };
+
+// polygon
+
+export const clickPolygonAction = () => {
+  return {
+    type: types.CLICK_POLYGON_ACTION,
+  };
+};
+
+export const pushPolygonItemAction = (data) => {
+  return {
+    type: types.PUSH_POLYGON_ITEM,
+    payload: data,
+  };
+};
+
+// square
+
+export const clickSquareAction = () => {
+  return {
+    type: types.CLICK_SQUARE_ACTION,
+  };
+};
+
+export const pushSquareItemAction = (data) => {
+  return {
+    type: types.PUSH_SQUARE_ITEM,
+    payload: data,
+  };
+};
