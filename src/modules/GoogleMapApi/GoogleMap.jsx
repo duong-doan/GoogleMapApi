@@ -45,7 +45,8 @@ const GoogleMapWrap = withScriptjs(
     const [center, setCenter] = useState(coordinates);
     const [dataMarker, setDataMarker] = useState(getDataMarker);
     const [dataPolyline, setDataPolyline] = useState(getDataPolyline);
-    const [dataPolygon, setDataPolygon] = useState(getDataPolygon);
+    const [dataPolygon, setDataPolygon] = useState([]);
+    console.log(dataPolygon);
 
     const handleClickMap = (event) => {
       if (getIsSelectedMarker) {
@@ -72,31 +73,6 @@ const GoogleMapWrap = withScriptjs(
         setDataPolyline((prevState) => [...prevState, polylineItem]);
         polylineRef.current.getPath().push(event.latLng);
       }
-
-      if (getIsSelectedPolygon) {
-        const point = {
-          lat: event.latLng.lat(),
-          lng: event.latLng.lng(),
-        };
-        dispatch(pushPolygonItemAction(point));
-        setDataPolygon((prevState) => [...prevState, point]);
-        polygonRef.current.getPath().push(event.latLng);
-
-        // new window.google.maps.drawing.DrawingManager({
-        //   drawingMode: window.google.maps.drawing.OverlayType.POLYGON,
-        //   drawingControl: true,
-        //   drawingControlOptions: {
-        //     position: window.google.maps.ControlPosition.TOP_CENTER,
-        //     drawingModes: [window.google.maps.drawing.OverlayType.POLYGON],
-        //   },
-        //   polygonOptions: {
-        //     editable: true,
-        //     draggable: true,
-        //   },
-        // }).setMap(
-        //   mapRef.current.context.__SECRET_MAP_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
-        // );
-      }
     };
 
     const handleClickBtnMarker = () => {
@@ -109,6 +85,37 @@ const GoogleMapWrap = withScriptjs(
 
     const handleClickBtnPolygon = () => {
       dispatch(clickPolygonAction());
+      let drawingManager = new window.google.maps.drawing.DrawingManager();
+      if (!getIsSelectedPolygon) {
+        drawingManager.setOptions({
+          drawingControlOptions: {
+            position: window.google.maps.ControlPosition.TOP_CENTER,
+            drawingModes: [window.google.maps.drawing.OverlayType.POLYGON],
+          },
+        });
+        drawingManager.setMap(
+          mapRef.current.context.__SECRET_MAP_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
+        );
+
+        new window.google.maps.event.addListener(
+          drawingManager,
+          "overlaycomplete",
+          function (event) {
+            event.overlay.set("editable", true);
+            event.overlay.set("draggable", true);
+            const coordinates = event.overlay.getPath().getArray();
+            dispatch(pushPolygonItemAction(coordinates));
+            setDataPolygon((prevState) => [...prevState, coordinates]);
+          },
+        );
+      } else {
+        drawingManager.setOptions({
+          drawingControl: false,
+        });
+        drawingManager.setMap(
+          mapRef.current.context.__SECRET_MAP_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
+        );
+      }
     };
 
     const handleClickBtnSquare = () => {
@@ -131,7 +138,12 @@ const GoogleMapWrap = withScriptjs(
           function (event) {
             event.overlay.set("editable", true);
             event.overlay.set("draggable", true);
-            console.log(event.overlay);
+            event.overlay
+              .getPath()
+              .getArray()
+              .map((position) => {
+                console.log(position);
+              });
           },
         );
       } else {
@@ -200,21 +212,23 @@ const GoogleMapWrap = withScriptjs(
             alt="polygon"
           />
         </button>
-        {getIsSelectedPolygon ? (
-          <Polygon
-            ref={polygonRef}
-            path={dataPolygon}
-            options={{
-              strokeColor: "#FF0000",
-              strokeOpacity: 0.8,
-              strokeWeight: 2,
-              fillColor: "#FF0000",
-              fillOpacity: 0.35,
-              editable: true,
-              draggable: true,
-            }}
-          />
-        ) : null}
+        {getIsSelectedPolygon && dataPolygon.length !== 0
+          ? dataPolygon.map((polygon) => (
+              <Polygon
+                ref={polygonRef}
+                path={polygon}
+                options={{
+                  strokeColor: "#FF0000",
+                  strokeOpacity: 0.8,
+                  strokeWeight: 2,
+                  fillColor: "#FF0000",
+                  fillOpacity: 0.35,
+                  editable: true,
+                  draggable: true,
+                }}
+              />
+            ))
+          : null}
 
         {/* button square */}
         <button
@@ -223,6 +237,7 @@ const GoogleMapWrap = withScriptjs(
         >
           <i className="fas fa-vector-square"></i>
         </button>
+        <button id="CoordsButton">Coordinates</button>
       </GoogleMap>
     );
   }),
