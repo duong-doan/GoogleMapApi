@@ -25,8 +25,6 @@ import {
   clickSquareAction,
   pushSquareItemAction,
 } from "./store/actions";
-import { useEffect } from "react";
-import { configure } from "@testing-library/react";
 
 const REACT_APP_GOOGLE_MAPS_API_KEY = "AIzaSyDG6pKMMvNJ2jumRlHiU-n_x14RERkfKrQ";
 
