@@ -69,7 +69,6 @@ const GoogleMapWrap = connect(
         getPolygon.isSelected,
       );
 
-      const [dataSquare, setDataSquare] = useState(getDataSquare);
       const [isSelectedSquare, setIsSelectedSquare] = useState(
         getSquare.isSelected,
       );
@@ -85,7 +84,7 @@ const GoogleMapWrap = connect(
         if (selectedShape) {
           selectedShape.setEditable(false);
           selectedShape.setOptions({
-            fillColor: "black",
+            fillColor: "#333",
           });
           selectedShape = null;
         }
@@ -212,7 +211,7 @@ const GoogleMapWrap = connect(
                     "click",
                     function (e) {
                       newShape.setOptions({
-                        fillColor: "white",
+                        fillColor: "red",
                       });
                       setSelection(newShape);
                     },
@@ -225,13 +224,22 @@ const GoogleMapWrap = connect(
       }, []);
 
       useEffect(() => {
-        window.google.maps.event.addDomListener(
-          document.querySelector(".btn-square"),
-          "click",
-          () => {
-            if (getSquare.isSelected) drawingManager.setMap(null);
-          },
-        );
+        const handleClickBtn = (classEl, data) => {
+          return window.google.maps.event.addDomListener(
+            document.querySelector(`.${classEl}`),
+            "click",
+            () => {
+              if (data.isSelected) {
+                drawingManager.setMap(null);
+              }
+            },
+          );
+        };
+
+        handleClickBtn("btn-square", getSquare);
+        handleClickBtn("btn-marker", getSquare);
+        handleClickBtn("btn-polyline", getSquare);
+        handleClickBtn("btn-polygon", getSquare);
       }, []);
 
       return (
@@ -318,7 +326,7 @@ const GoogleMapWrap = connect(
           <button
             className={`delete-button ${isSelectedSquare ? "" : "hidden"}`}
           >
-            delete
+            Delete Shape
           </button>
         </GoogleMap>
       );
