@@ -1,45 +1,51 @@
 import * as types from "./constants";
 
 // marker
-export const clickMarkerAction = () => {
+export const clickMarkerAction = (name) => {
   return {
     type: types.CLICK_MARKER_ACTION,
+    payload: name,
   };
 };
 
-export const pushMarkerItemAction = (data) => {
+export const pushMarkerItemAction = (name, data) => {
   return {
     type: types.PUSH_MARKER_ITEM,
-    payload: data,
+    payload: {
+      name,
+      data,
+    },
   };
 };
 
 // polyline
-export const clickPolylineAction = () => {
+export const clickPolylineAction = (name) => {
   return {
     type: types.CLICK_POLYLINE_ACTION,
+    payload: name,
   };
 };
 
-export const pushPolylineItemAction = (data) => {
+export const pushPolylineItemAction = (name, data) => {
   return {
     type: types.PUSH_POLYLINE_ITEM,
-    payload: data,
+    payload: { name, data },
   };
 };
 
 // polygon
 
-export const clickPolygonAction = () => {
+export const clickPolygonAction = (name) => {
   return {
     type: types.CLICK_POLYGON_ACTION,
+    payload: name,
   };
 };
 
-export const pushPolygonItemAction = (data) => {
+export const pushPolygonItemAction = (name, data) => {
   return {
     type: types.PUSH_POLYGON_ITEM,
-    payload: data,
+    payload: { name, data },
   };
 };
 

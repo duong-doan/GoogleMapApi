@@ -6,22 +6,22 @@ const selectGoogleMap = (state) => get(state, "googleMap") || initState;
 
 const makeGetMarker = () =>
   createSelector(selectGoogleMap, (selectGoogleMap) =>
-    get(selectGoogleMap, "marker"),
+    selectGoogleMap.data.find((item) => item.name === "marker"),
   );
 
 const makeGetPolyline = () =>
   createSelector(selectGoogleMap, (selectGoogleMap) =>
-    get(selectGoogleMap, "polyline"),
+    selectGoogleMap.data.find((item) => item.name === "polyline"),
   );
 
 const makeGetPolygon = () =>
   createSelector(selectGoogleMap, (selectGoogleMap) =>
-    get(selectGoogleMap, "polygon"),
+    selectGoogleMap.data.find((item) => item.name === "polygon"),
   );
 
 const makeGetSquare = () =>
   createSelector(selectGoogleMap, (selectGoogleMap) =>
-    get(selectGoogleMap, "square"),
+    selectGoogleMap.data.find((item) => item.name === "square"),
   );
 
 export { makeGetMarker, makeGetPolyline, makeGetPolygon, makeGetSquare };
