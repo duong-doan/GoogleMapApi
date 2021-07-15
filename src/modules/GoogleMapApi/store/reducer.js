@@ -94,7 +94,9 @@ const reducerGoogleMap = (state = initState, action) => {
       const dataItemPolygon = filterDataPolygon.find(
         (item) => item.name === action.payload.name,
       );
-      dataItemPolygon.data.push(itemPolygon);
+      if (itemPolygon.id === 0) {
+        dataItemPolygon.data.push(itemPolygon);
+      }
       return {
         ...state,
         data: filterDataPolygon,
@@ -102,13 +104,18 @@ const reducerGoogleMap = (state = initState, action) => {
 
     //   square
     case types.CLICK_SQUARE_ACTION:
-      const toggleSquare = !state.square.isSelected;
+      const cloneDataSquare = [...state.data];
+      cloneDataSquare.filter((type) => {
+        const toggle = type.isSelected;
+        if (type.name === action.payload) {
+          type.isSelected = !toggle;
+        } else {
+          type.isSelected = false;
+        }
+      });
       return {
         ...state,
-        square: {
-          ...state.square,
-          isSelected: toggleSquare,
-        },
+        data: cloneDataSquare,
       };
 
     case types.PUSH_SQUARE_ITEM:

@@ -9,6 +9,19 @@
   }
 }
 
+.delete-button {
+  position: absolute;
+  top: 5px;
+  left: 40%;
+  transform: translate(-40%);
+  padding: 5px 10px;
+  font-weight: bold;
+}
+
+.hidden {
+  display: none;
+}
+
 .btn-marker,
 .btn-polyline,
 .btn-polygon,

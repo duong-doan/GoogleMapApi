@@ -47,12 +47,13 @@ const GoogleMapWrap = connect(
       const { data: getDataMarker } = getMarker;
       const { data: getDataPolyline } = getPolyline;
       const { data: getDataPolygon } = getPolygon;
-
+      const { data: getDataSquare } = getSquare;
       const mapRef = useRef();
       const polylineRef = useRef();
       const polygonRef = useRef();
       const coordinates = { lat: 25.774, lng: -80.19 };
       const [center, setCenter] = useState(coordinates);
+
       const [dataMarker, setDataMarker] = useState(getDataMarker);
       const [isSelectedMarker, setIsSelectedMarker] = useState(
         getMarker.isSelected,
@@ -68,17 +69,39 @@ const GoogleMapWrap = connect(
         getPolygon.isSelected,
       );
 
-      useEffect(() => {
-        if (
-          getMarker.isSelected ||
-          getPolyline.isSelected ||
-          getPolygon.isSelected
-        ) {
-          setIsSelectedMarker(getMarker.isSelected);
-          setIsSelectedPolyline(getPolyline.isSelected);
-          setIsSelectedPolygon(getPolygon.isSelected);
+      const [dataSquare, setDataSquare] = useState(getDataSquare);
+      const [isSelectedSquare, setIsSelectedSquare] = useState(
+        getSquare.isSelected,
+      );
+
+      let drawingManager = new window.google.maps.drawing.DrawingManager();
+      let selectedShape;
+      const setSelection = (shape) => {
+        clearSelection();
+        selectedShape = shape;
+        shape.setEditable(true);
+      };
+      const clearSelection = () => {
+        if (selectedShape) {
+          selectedShape.setEditable(false);
+          selectedShape.setOptions({
+            fillColor: "black",
+          });
+          selectedShape = null;
         }
-      }, [getMarker.isSelected, getPolyline.isSelected, getPolygon.isSelected]);
+      };
+
+      useEffect(() => {
+        setIsSelectedMarker(getMarker.isSelected);
+        setIsSelectedPolyline(getPolyline.isSelected);
+        setIsSelectedPolygon(getPolygon.isSelected);
+        setIsSelectedSquare(getSquare.isSelected);
+      }, [
+        getMarker.isSelected,
+        getPolyline.isSelected,
+        getPolygon.isSelected,
+        getSquare.isSelected,
+      ]);
 
       const handleClickMap = (event) => {
         if (isSelectedMarker) {
@@ -107,13 +130,18 @@ const GoogleMapWrap = connect(
         }
 
         if (isSelectedPolygon) {
+          const polygonItem = {
+            id: dataPolygon.length,
+            arrPolygon: [],
+          };
           polygonRef.current.getPath().push(event.latLng);
-          console.log(polygonRef.current.getPath());
           window.addEventListener("dblclick", () => {
             const arrayItemPolygon = polygonRef.current.getPath().getArray();
+            polygonItem.arrPolygon = arrayItemPolygon;
+            console.log(arrayItemPolygon);
             dispatch(pushPolygonItemAction("polygon", arrayItemPolygon));
+            setDataPolyline((prevState) => [...prevState, polygonItem]);
           });
-          // setDataPolyline((prevState) => [...prevState, itemPolygon]);
         }
       };
 
@@ -132,36 +160,79 @@ const GoogleMapWrap = connect(
         setIsSelectedPolygon(getPolygon.isSelected);
       };
 
-      // const handleClickBtnSquare = () => {
-      //   dispatch(clickSquareAction());
-      //   if (!getIsSelectedSquare) {
-      //     const drawingManager = new window.google.maps.drawing.DrawingManager({
-      //       drawingControlOptions: {
-      //         position: window.google.maps.ControlPosition.TOP_CENTER,
-      //         drawingModes: [window.google.maps.drawing.OverlayType.RECTANGLE],
-      //       },
-      //     });
+      const handleClickBtnSquare = () => {
+        dispatch(clickSquareAction("square"));
+        setIsSelectedSquare(getSquare.isSelected);
+      };
 
-      //     drawingManager.setMap(
-      //       mapRef.current.context.__SECRET_MAP_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
-      //     );
+      useEffect(() => {
+        window.google.maps.event.addDomListener(
+          document.querySelector(".delete-button"),
+          "click",
+          () => {
+            if (selectedShape) {
+              selectedShape.setMap(null);
+            }
+          },
+        );
 
-      //     new window.google.maps.event.addListener(
-      //       drawingManager,
-      //       "overlaycomplete",
-      //       function (event) {
-      //         event.overlay.set("editable", true);
-      //         event.overlay.set("draggable", true);
-      //         event.overlay
-      //           .getPath()
-      //           .getArray()
-      //           .map((position) => {
-      //             console.log(position);
-      //           });
-      //       },
-      //     );
-      //   }
-      // };
+        window.google.maps.event.addDomListener(
+          document.querySelector(".btn-square"),
+          "click",
+          () => {
+            if (!isSelectedSquare) {
+              drawingManager.setOptions({
+                drawingControlOptions: {
+                  position: window.google.maps.ControlPosition.TOP_CENTER,
+                  drawingModes: [
+                    window.google.maps.drawing.OverlayType.RECTANGLE,
+                  ],
+                },
+              });
+              drawingManager.setDrawingMode(
+                window.google.maps.drawing.OverlayType.RECTANGLE,
+              );
+              drawingManager.setMap(
+                mapRef.current.context
+                  .__SECRET_MAP_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
+              );
+
+              window.google.maps.event.addListener(
+                drawingManager,
+                "overlaycomplete",
+                function (event) {
+                  event.overlay.set("editable", true);
+                  event.overlay.set("draggable", true);
+                  drawingManager.setDrawingMode(null);
+                  var newShape = event.overlay;
+                  newShape.type = event.type;
+
+                  window.google.maps.event.addListener(
+                    newShape,
+                    "click",
+                    function (e) {
+                      newShape.setOptions({
+                        fillColor: "white",
+                      });
+                      setSelection(newShape);
+                    },
+                  );
+                },
+              );
+            }
+          },
+        );
+      }, []);
+
+      useEffect(() => {
+        window.google.maps.event.addDomListener(
+          document.querySelector(".btn-square"),
+          "click",
+          () => {
+            if (getSquare.isSelected) drawingManager.setMap(null);
+          },
+        );
+      }, []);
 
       return (
         <GoogleMap
@@ -177,7 +248,6 @@ const GoogleMapWrap = connect(
           >
             <i className="fas fa-map-marker"></i>
           </button>
-
           {isSelectedMarker && dataMarker.length !== 0
             ? dataMarker.map((marker) => (
                 <Marker
@@ -188,7 +258,6 @@ const GoogleMapWrap = connect(
                 />
               ))
             : null}
-
           {/* button polyline */}
           <button
             className={`btn-polyline ${isSelectedPolyline ? "active" : ""}`}
@@ -212,7 +281,6 @@ const GoogleMapWrap = connect(
               }}
             />
           ) : null}
-
           {/* button polygon */}
           <button
             onClick={handleClickBtnPolygon}
@@ -223,11 +291,10 @@ const GoogleMapWrap = connect(
               alt="polygon"
             />
           </button>
-
           {isSelectedPolygon ? (
             <Polygon
               ref={polygonRef}
-              // path={getDataPolygon}
+              // path={dataPolygon[0].arrPolygon}
               options={{
                 strokeColor: "#FF0000",
                 strokeOpacity: 0.8,
@@ -240,29 +307,28 @@ const GoogleMapWrap = connect(
             />
           ) : null}
 
-          {/* button square
-        <button
-          onClick={handleClickBtnSquare}
-          className={`btn-square ${getIsSelectedSquare ? "active" : ""}`}
-        >
-          <i className="fas fa-vector-square"></i>
-        </button>
-        <button id="CoordsButton">Coordinates</button> */}
+          {/* button square */}
+          <button
+            onClick={handleClickBtnSquare}
+            className={`btn-square ${isSelectedSquare ? "active" : ""}`}
+          >
+            <i className="fas fa-vector-square"></i>
+          </button>
+
+          <button
+            className={`delete-button ${isSelectedSquare ? "" : "hidden"}`}
+          >
+            delete
+          </button>
         </GoogleMap>
       );
     }),
   ),
 );
 
-const Map = (props) => {
-  // const { getMarker, getPolyline, getPolygon, getSquare } = props;
-  // useEffect(() => {}, [getMarker, getPolyline]);
+const Map = () => {
   return (
     <GoogleMapWrap
-      // getPolygon={getPolygon}
-      // getMarker={getMarker}
-      // getPolyline={getPolyline}
-      // getSquare={getSquare}
       googleMapURL={`https://maps.googleapis.com/maps/api/js?key=${REACT_APP_GOOGLE_MAPS_API_KEY}&libraries=geometry,drawing,places`}
       loadingElement={<div style={{ height: "100%" }} />}
       containerElement={<div style={{ height: "100%" }} />}

@@ -51,9 +51,10 @@ export const pushPolygonItemAction = (name, data) => {
 
 // square
 
-export const clickSquareAction = () => {
+export const clickSquareAction = (name) => {
   return {
     type: types.CLICK_SQUARE_ACTION,
+    payload: name,
   };
 };
 
