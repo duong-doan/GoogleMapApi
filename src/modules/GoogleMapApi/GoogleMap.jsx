@@ -47,7 +47,7 @@ const GoogleMapWrap = connect(
       const { data: getDataMarker } = getMarker;
       const { data: getDataPolyline } = getPolyline;
       const { data: getDataPolygon } = getPolygon;
-      const { data: getDataSquare } = getSquare;
+      // const { data: getDataSquare } = getSquare;
       const mapRef = useRef();
       const polylineRef = useRef();
       const polygonRef = useRef();
@@ -73,6 +73,7 @@ const GoogleMapWrap = connect(
         getSquare.isSelected,
       );
 
+      //------ select shape and switch shape----
       let drawingManager = new window.google.maps.drawing.DrawingManager();
       let selectedShape;
       const setSelection = (shape) => {
@@ -89,7 +90,9 @@ const GoogleMapWrap = connect(
           selectedShape = null;
         }
       };
+      // --------------------------------------------------------------
 
+      //--------- update status switch button------
       useEffect(() => {
         setIsSelectedMarker(getMarker.isSelected);
         setIsSelectedPolyline(getPolyline.isSelected);
@@ -101,7 +104,9 @@ const GoogleMapWrap = connect(
         getPolygon.isSelected,
         getSquare.isSelected,
       ]);
+      // ----------------------------------------------------------------
 
+      // -------click mouse choose positions in google map-----
       const handleClickMap = (event) => {
         if (isSelectedMarker) {
           setCenter({
@@ -128,22 +133,24 @@ const GoogleMapWrap = connect(
           polylineRef.current.getPath().push(event.latLng);
         }
 
-        if (isSelectedPolygon) {
-          const polygonItem = {
-            id: dataPolygon.length,
-            arrPolygon: [],
-          };
-          polygonRef.current.getPath().push(event.latLng);
-          window.addEventListener("dblclick", () => {
-            const arrayItemPolygon = polygonRef.current.getPath().getArray();
-            polygonItem.arrPolygon = arrayItemPolygon;
-            console.log(arrayItemPolygon);
-            dispatch(pushPolygonItemAction("polygon", arrayItemPolygon));
-            setDataPolyline((prevState) => [...prevState, polygonItem]);
-          });
-        }
+        // if (isSelectedPolygon) {
+        //   const polygonItem = {
+        //     id: dataPolygon.length,
+        //     arrPolygon: [],
+        //   };
+        //   polygonRef.current.getPath().push(event.latLng);
+        //   window.addEventListener("dblclick", () => {
+        //     const arrayItemPolygon = polygonRef.current.getPath().getArray();
+        //     polygonItem.arrPolygon = arrayItemPolygon;
+        //     console.log(arrayItemPolygon);
+        //     dispatch(pushPolygonItemAction("polygon", arrayItemPolygon));
+        //     setDataPolyline((prevState) => [...prevState, polygonItem]);
+        //   });
+        // }
       };
+      // ----------------------------------------------------------------
 
+      // ------------click single button-----------------
       const handleClickBtnMarker = () => {
         dispatch(clickMarkerAction("marker"));
         setIsSelectedMarker(getMarker.isSelected);
@@ -163,8 +170,68 @@ const GoogleMapWrap = connect(
         dispatch(clickSquareAction("square"));
         setIsSelectedSquare(getSquare.isSelected);
       };
+      // -----------------------------------------------------------------
 
+      //------------update button polygon using tool draw in gg map---------
       useEffect(() => {
+        window.google.maps.event.addDomListener(
+          document.querySelector(".btn-polygon"),
+          "click",
+          () => {
+            if (!isSelectedPolygon) {
+              drawingManager.setOptions({
+                drawingControlOptions: {
+                  position: window.google.maps.ControlPosition.TOP_CENTER,
+                  drawingModes: [
+                    window.google.maps.drawing.OverlayType.POLYGON,
+                  ],
+                },
+              });
+              drawingManager.setDrawingMode(
+                window.google.maps.drawing.OverlayType.POLYGON,
+              );
+              drawingManager.setMap(
+                mapRef.current.context
+                  .__SECRET_MAP_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
+              );
+
+              // function implement when after drawing complete
+              window.google.maps.event.addListener(
+                drawingManager,
+                "overlaycomplete",
+                function (event) {
+                  event.overlay.set("editable", true);
+                  event.overlay.set("draggable", true);
+                  drawingManager.setDrawingMode(null);
+                  // get coordinate and dispatch
+                  const coordinatesPolygonItem = event.overlay
+                    .getPath()
+                    .getArray();
+
+                  dispatch(
+                    pushPolygonItemAction("polygon", coordinatesPolygonItem),
+                  );
+
+                  // make a new shape
+                  var newShape = event.overlay;
+                  newShape.type = event.type;
+                  window.google.maps.event.addListener(
+                    newShape,
+                    "click",
+                    function (e) {
+                      newShape.setOptions({
+                        fillColor: "red",
+                      });
+                      setSelection(newShape);
+                    },
+                  );
+                },
+              );
+            }
+          },
+        );
+
+        // --------------click button delete shape---------------
         window.google.maps.event.addDomListener(
           document.querySelector(".delete-button"),
           "click",
@@ -174,7 +241,10 @@ const GoogleMapWrap = connect(
             }
           },
         );
+      }, []);
 
+      // -------------update button square using tool draw in gg map-------
+      useEffect(() => {
         window.google.maps.event.addDomListener(
           document.querySelector(".btn-square"),
           "click",
@@ -221,8 +291,21 @@ const GoogleMapWrap = connect(
             }
           },
         );
-      }, []);
 
+        // --------------click button delete shape---------------
+        window.google.maps.event.addDomListener(
+          document.querySelector(".delete-button"),
+          "click",
+          () => {
+            if (selectedShape) {
+              selectedShape.setMap(null);
+            }
+          },
+        );
+      }, []);
+      // --------------------------------------------------------
+
+      //----------- switch button drawing gg map---------
       useEffect(() => {
         const handleClickBtn = (classEl, data) => {
           return window.google.maps.event.addDomListener(
@@ -240,7 +323,13 @@ const GoogleMapWrap = connect(
         handleClickBtn("btn-marker", getSquare);
         handleClickBtn("btn-polyline", getSquare);
         handleClickBtn("btn-polygon", getSquare);
+
+        handleClickBtn("btn-square", getPolygon);
+        handleClickBtn("btn-marker", getPolygon);
+        handleClickBtn("btn-polyline", getPolygon);
+        handleClickBtn("btn-polygon", getPolygon);
       }, []);
+      // --------------------------------------------------------
 
       return (
         <GoogleMap
@@ -250,6 +339,7 @@ const GoogleMapWrap = connect(
           ref={mapRef}
           onClick={handleClickMap}
         >
+          {/* ------------------button marker------------------ */}
           <button
             className={`btn-marker ${isSelectedMarker ? "active" : ""}`}
             onClick={handleClickBtnMarker}
@@ -266,7 +356,8 @@ const GoogleMapWrap = connect(
                 />
               ))
             : null}
-          {/* button polyline */}
+
+          {/* ------------------button polyline--------------------- */}
           <button
             className={`btn-polyline ${isSelectedPolyline ? "active" : ""}`}
             onClick={handleClickBtnPolyline}
@@ -289,7 +380,8 @@ const GoogleMapWrap = connect(
               }}
             />
           ) : null}
-          {/* button polygon */}
+
+          {/* ------------------button polygon--------------------- */}
           <button
             onClick={handleClickBtnPolygon}
             className={`btn-polygon ${isSelectedPolygon ? "active" : ""}`}
@@ -315,7 +407,7 @@ const GoogleMapWrap = connect(
             />
           ) : null}
 
-          {/* button square */}
+          {/* ------------------button box--------------------- */}
           <button
             onClick={handleClickBtnSquare}
             className={`btn-square ${isSelectedSquare ? "active" : ""}`}
@@ -323,8 +415,11 @@ const GoogleMapWrap = connect(
             <i className="fas fa-vector-square"></i>
           </button>
 
+          {/* ------------------button delete--------------------- */}
           <button
-            className={`delete-button ${isSelectedSquare ? "" : "hidden"}`}
+            className={`delete-button ${
+              isSelectedSquare || isSelectedPolygon ? "" : "hidden"
+            }`}
           >
             Delete Shape
           </button>

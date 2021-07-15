@@ -7,6 +7,12 @@ export const initState = {
     { name: "polygon", data: [], isSelected: false },
     { name: "square", data: [], isSelected: false },
   ],
+  filters: {
+    active: (itemArray, name) =>
+      itemArray.name === name
+        ? (itemArray.isSelected = !itemArray.isSelected)
+        : (itemArray.isSelected = false),
+  },
 };
 
 const reducerGoogleMap = (state = initState, action) => {
@@ -14,15 +20,9 @@ const reducerGoogleMap = (state = initState, action) => {
     //   marker
     case types.CLICK_MARKER_ACTION:
       const cloneDataMarker = [...state.data];
-      cloneDataMarker.filter((type) => {
-        const toggle = type.isSelected;
-        if (type.name === action.payload) {
-          type.isSelected = !toggle;
-        } else {
-          type.isSelected = false;
-        }
+      cloneDataMarker.filter((item) => {
+        state.filters.active(item, action.payload);
       });
-
       return {
         ...state,
         data: cloneDataMarker,
@@ -43,13 +43,8 @@ const reducerGoogleMap = (state = initState, action) => {
     //   polyline
     case types.CLICK_POLYLINE_ACTION:
       const cloneDataPolyline = [...state.data];
-      cloneDataPolyline.filter((type) => {
-        const toggle = type.isSelected;
-        if (type.name === action.payload) {
-          type.isSelected = !toggle;
-        } else {
-          type.isSelected = false;
-        }
+      cloneDataPolyline.filter((item) => {
+        state.filters.active(item, action.payload);
       });
       return {
         ...state,
@@ -69,16 +64,10 @@ const reducerGoogleMap = (state = initState, action) => {
       };
 
     //   polygon
-
     case types.CLICK_POLYGON_ACTION:
       const cloneDataPolygon = [...state.data];
-      cloneDataPolygon.filter((type) => {
-        const toggle = type.isSelected;
-        if (type.name === action.payload) {
-          type.isSelected = !toggle;
-        } else {
-          type.isSelected = false;
-        }
+      cloneDataPolygon.filter((item) => {
+        state.filters.active(item, action.payload);
       });
       return {
         ...state,
@@ -87,16 +76,16 @@ const reducerGoogleMap = (state = initState, action) => {
 
     case types.PUSH_POLYGON_ITEM:
       const filterDataPolygon = [...state.data];
-      const itemPolygon = {
-        id: state.data[2].data.length,
-        arrPolygon: action.payload.data,
-      };
-      const dataItemPolygon = filterDataPolygon.find(
-        (item) => item.name === action.payload.name,
-      );
-      if (itemPolygon.id === 0) {
-        dataItemPolygon.data.push(itemPolygon);
-      }
+      filterDataPolygon.filter((item) => {
+        if (item.name === action.payload.name) {
+          const polygonItem = {
+            id: item.data.length,
+            arrPolygon: action.payload.data,
+          };
+          item.data.push(polygonItem);
+        }
+      });
+      console.log(filterDataPolygon);
       return {
         ...state,
         data: filterDataPolygon,
@@ -105,14 +94,10 @@ const reducerGoogleMap = (state = initState, action) => {
     //   square
     case types.CLICK_SQUARE_ACTION:
       const cloneDataSquare = [...state.data];
-      cloneDataSquare.filter((type) => {
-        const toggle = type.isSelected;
-        if (type.name === action.payload) {
-          type.isSelected = !toggle;
-        } else {
-          type.isSelected = false;
-        }
+      cloneDataSquare.filter((item) => {
+        state.filters.active(item, action.payload);
       });
+      console.log(cloneDataSquare);
       return {
         ...state,
         data: cloneDataSquare,
@@ -121,10 +106,6 @@ const reducerGoogleMap = (state = initState, action) => {
     case types.PUSH_SQUARE_ITEM:
       return {
         ...state,
-        square: {
-          ...state.square,
-          data: [...state.square.data, action.payload],
-        },
       };
 
     default:
