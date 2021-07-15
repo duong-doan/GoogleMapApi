@@ -307,7 +307,20 @@ const GoogleMapWrap = connect(
 
       //----------- switch button drawing gg map---------
       useEffect(() => {
-        const handleClickBtn = (classEl, data) => {
+        const handleClickBtnNotUseTools = (classEl) => {
+          return window.google.maps.event.addDomListener(
+            document.querySelector(`.${classEl}`),
+            "click",
+            () => {
+              drawingManager.setMap(null);
+            },
+          );
+        };
+
+        handleClickBtnNotUseTools("btn-marker");
+        handleClickBtnNotUseTools("btn-polyline");
+
+        const handleClickBtnUseTools = (classEl, data) => {
           return window.google.maps.event.addDomListener(
             document.querySelector(`.${classEl}`),
             "click",
@@ -318,16 +331,8 @@ const GoogleMapWrap = connect(
             },
           );
         };
-
-        handleClickBtn("btn-square", getSquare);
-        handleClickBtn("btn-marker", getSquare);
-        handleClickBtn("btn-polyline", getSquare);
-        handleClickBtn("btn-polygon", getSquare);
-
-        handleClickBtn("btn-square", getPolygon);
-        handleClickBtn("btn-marker", getPolygon);
-        handleClickBtn("btn-polyline", getPolygon);
-        handleClickBtn("btn-polygon", getPolygon);
+        handleClickBtnUseTools("btn-polygon", getPolygon);
+        handleClickBtnUseTools("btn-square", getSquare);
       }, []);
       // --------------------------------------------------------
 
