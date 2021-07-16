@@ -63,12 +63,12 @@ const GoogleMapWrap = connect(
         getPolyline.isSelected,
       );
 
-      const [dataPolygon, setDataPolygon] = useState(getPolygon.data);
+      const [dataPolygon, setDataPolygon] = useState([]);
       const [isSelectedPolygon, setIsSelectedPolygon] = useState(
         getPolygon.isSelected,
       );
 
-      const [dataSquare, setDataSquare] = useState(getSquare.data);
+      const [dataSquare, setDataSquare] = useState([]);
       const [isSelectedSquare, setIsSelectedSquare] = useState(
         getSquare.isSelected,
       );
