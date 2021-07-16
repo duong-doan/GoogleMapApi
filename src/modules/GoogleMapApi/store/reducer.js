@@ -2,10 +2,26 @@ import * as types from "./constants";
 
 export const initState = {
   data: [
-    { name: "marker", data: [], isSelected: false },
-    { name: "polyline", data: [], isSelected: false },
-    { name: "polygon", data: [], isSelected: false },
-    { name: "square", data: [], isSelected: false },
+    {
+      name: "marker",
+      data: [],
+      isSelected: false,
+    },
+    {
+      name: "polyline",
+      data: [],
+      isSelected: false,
+    },
+    {
+      name: "polygon",
+      data: [],
+      isSelected: false,
+    },
+    {
+      name: "square",
+      data: [],
+      isSelected: false,
+    },
   ],
   filters: {
     active: (itemArray, name) =>
@@ -85,7 +101,7 @@ const reducerGoogleMap = (state = initState, action) => {
           item.data.push(polygonItem);
         }
       });
-      console.log(filterDataPolygon);
+      console.log("reducer", filterDataPolygon);
       return {
         ...state,
         data: filterDataPolygon,
@@ -97,15 +113,26 @@ const reducerGoogleMap = (state = initState, action) => {
       cloneDataSquare.filter((item) => {
         state.filters.active(item, action.payload);
       });
-      console.log(cloneDataSquare);
       return {
         ...state,
         data: cloneDataSquare,
       };
 
     case types.PUSH_SQUARE_ITEM:
+      const filterDataSquare = [...state.data];
+      filterDataSquare.filter((item) => {
+        if (item.name === action.payload.name) {
+          const SquareItem = {
+            id: item.data.length,
+            arrSquare: action.payload.data,
+          };
+          item.data.push(SquareItem);
+        }
+      });
+      console.log(filterDataSquare);
       return {
         ...state,
+        data: filterDataSquare,
       };
 
     default:

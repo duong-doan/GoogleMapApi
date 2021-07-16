@@ -58,9 +58,9 @@ export const clickSquareAction = (name) => {
   };
 };
 
-export const pushSquareItemAction = (data) => {
+export const pushSquareItemAction = (name, data) => {
   return {
     type: types.PUSH_SQUARE_ITEM,
-    payload: data,
+    payload: { name, data },
   };
 };

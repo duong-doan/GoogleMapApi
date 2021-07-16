@@ -47,12 +47,11 @@ const GoogleMapWrap = connect(
       const { data: getDataMarker } = getMarker;
       const { data: getDataPolyline } = getPolyline;
       const { data: getDataPolygon } = getPolygon;
-      // const { data: getDataSquare } = getSquare;
       const mapRef = useRef();
       const polylineRef = useRef();
-      const polygonRef = useRef();
       const coordinates = { lat: 25.774, lng: -80.19 };
       const [center, setCenter] = useState(coordinates);
+      const [isShowDel, setIsShowDel] = useState(false);
 
       const [dataMarker, setDataMarker] = useState(getDataMarker);
       const [isSelectedMarker, setIsSelectedMarker] = useState(
@@ -64,14 +63,16 @@ const GoogleMapWrap = connect(
         getPolyline.isSelected,
       );
 
-      const [dataPolygon, setDataPolygon] = useState(getDataPolygon);
+      const [dataPolygon, setDataPolygon] = useState(getPolygon.data);
       const [isSelectedPolygon, setIsSelectedPolygon] = useState(
         getPolygon.isSelected,
       );
 
+      const [dataSquare, setDataSquare] = useState(getSquare.data);
       const [isSelectedSquare, setIsSelectedSquare] = useState(
         getSquare.isSelected,
       );
+      console.log(dataPolygon);
 
       //------ select shape and switch shape----
       let drawingManager = new window.google.maps.drawing.DrawingManager();
@@ -79,12 +80,20 @@ const GoogleMapWrap = connect(
       const setSelection = (shape) => {
         clearSelection();
         selectedShape = shape;
-        shape.setEditable(true);
+        if (selectedShape) {
+          setIsShowDel(true);
+        }
+        shape.setOptions({
+          fillColor: "#7a3a4d",
+          draggable: true,
+          editable: true,
+        });
       };
       const clearSelection = () => {
         if (selectedShape) {
-          selectedShape.setEditable(false);
           selectedShape.setOptions({
+            editable: false,
+            draggable: false,
             fillColor: "#333",
           });
           selectedShape = null;
@@ -132,21 +141,6 @@ const GoogleMapWrap = connect(
           setDataPolyline((prevState) => [...prevState, polylineItem]);
           polylineRef.current.getPath().push(event.latLng);
         }
-
-        // if (isSelectedPolygon) {
-        //   const polygonItem = {
-        //     id: dataPolygon.length,
-        //     arrPolygon: [],
-        //   };
-        //   polygonRef.current.getPath().push(event.latLng);
-        //   window.addEventListener("dblclick", () => {
-        //     const arrayItemPolygon = polygonRef.current.getPath().getArray();
-        //     polygonItem.arrPolygon = arrayItemPolygon;
-        //     console.log(arrayItemPolygon);
-        //     dispatch(pushPolygonItemAction("polygon", arrayItemPolygon));
-        //     setDataPolyline((prevState) => [...prevState, polygonItem]);
-        //   });
-        // }
       };
       // ----------------------------------------------------------------
 
@@ -190,6 +184,9 @@ const GoogleMapWrap = connect(
               drawingManager.setDrawingMode(
                 window.google.maps.drawing.OverlayType.POLYGON,
               );
+              drawingManager.setOptions({
+                drawingControl: false,
+              });
               drawingManager.setMap(
                 mapRef.current.context
                   .__SECRET_MAP_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
@@ -200,31 +197,42 @@ const GoogleMapWrap = connect(
                 drawingManager,
                 "overlaycomplete",
                 function (event) {
-                  event.overlay.set("editable", true);
-                  event.overlay.set("draggable", true);
-                  drawingManager.setDrawingMode(null);
-                  // get coordinate and dispatch
-                  const coordinatesPolygonItem = event.overlay
-                    .getPath()
-                    .getArray();
+                  if (event.type === "polygon") {
+                    // get coordinate and dispatch
+                    drawingManager.setMap(null);
+                    drawingManager.setDrawingMode(null);
 
-                  dispatch(
-                    pushPolygonItemAction("polygon", coordinatesPolygonItem),
-                  );
+                    const coordinatesPolygonItem = event.overlay
+                      .getPath()
+                      .getArray();
 
-                  // make a new shape
-                  var newShape = event.overlay;
-                  newShape.type = event.type;
-                  window.google.maps.event.addListener(
-                    newShape,
-                    "click",
-                    function (e) {
-                      newShape.setOptions({
-                        fillColor: "red",
-                      });
-                      setSelection(newShape);
-                    },
-                  );
+                    dispatch(
+                      pushPolygonItemAction("polygon", coordinatesPolygonItem),
+                    );
+                    if (coordinatesPolygonItem) {
+                      const polygonItem = {
+                        id: dataPolygon.length,
+                        arrPolygon: coordinatesPolygonItem,
+                      };
+                      setDataPolygon((prevState) => [
+                        ...prevState,
+                        polygonItem,
+                      ]);
+                      console.log("view", dataPolygon);
+                    }
+
+                    // make a new shape
+                    var newShape = event.overlay;
+                    newShape.type = event.type;
+                    newShape.setMap(null);
+                    new window.google.maps.event.addListener(
+                      newShape,
+                      "click",
+                      () => {
+                        setSelection(newShape);
+                      },
+                    );
+                  }
                 },
               );
             }
@@ -232,15 +240,15 @@ const GoogleMapWrap = connect(
         );
 
         // --------------click button delete shape---------------
-        window.google.maps.event.addDomListener(
-          document.querySelector(".delete-button"),
-          "click",
-          () => {
-            if (selectedShape) {
-              selectedShape.setMap(null);
-            }
-          },
-        );
+        // window.google.maps.event.addDomListener(
+        //   document.querySelector(".delete-button"),
+        //   "click",
+        //   () => {
+        //     if (selectedShape) {
+        //       selectedShape.setMap(null);
+        //     }
+        //   },
+        // );
       }, []);
 
       // -------------update button square using tool draw in gg map-------
@@ -261,6 +269,9 @@ const GoogleMapWrap = connect(
               drawingManager.setDrawingMode(
                 window.google.maps.drawing.OverlayType.RECTANGLE,
               );
+              drawingManager.setOptions({
+                drawingControl: false,
+              });
               drawingManager.setMap(
                 mapRef.current.context
                   .__SECRET_MAP_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
@@ -270,22 +281,59 @@ const GoogleMapWrap = connect(
                 drawingManager,
                 "overlaycomplete",
                 function (event) {
-                  event.overlay.set("editable", true);
-                  event.overlay.set("draggable", true);
-                  drawingManager.setDrawingMode(null);
-                  var newShape = event.overlay;
-                  newShape.type = event.type;
+                  if (event.type === "rectangle") {
+                    drawingManager.setMap(null);
+                    drawingManager.setDrawingMode(null);
+                    var newShape = event.overlay;
+                    newShape.type = event.type;
+                    newShape.setMap(null);
 
-                  window.google.maps.event.addListener(
-                    newShape,
-                    "click",
-                    function (e) {
-                      newShape.setOptions({
-                        fillColor: "red",
-                      });
-                      setSelection(newShape);
-                    },
-                  );
+                    const SW = event.overlay.getBounds().getSouthWest();
+                    const NE = event.overlay.getBounds().getNorthEast();
+                    const pointSW = {
+                      lat: SW.lat(),
+                      lng: SW.lng(),
+                    };
+                    const pointNE = {
+                      lat: NE.lat(),
+                      lng: NE.lng(),
+                    };
+                    const getPointSE = new window.google.maps.LatLng(
+                      SW.lat(),
+                      NE.lng(),
+                    );
+                    const pointSE = {
+                      lat: getPointSE.lat(),
+                      lng: getPointSE.lng(),
+                    };
+                    const getPointNW = new window.google.maps.LatLng(
+                      NE.lat(),
+                      SW.lng(),
+                    );
+                    const pointNW = {
+                      lat: getPointNW.lat(),
+                      lng: getPointNW.lng(),
+                    };
+                    const coordinatesShape = [
+                      pointNW,
+                      pointSW,
+                      pointSE,
+                      pointNE,
+                    ];
+                    dispatch(pushSquareItemAction("square", coordinatesShape));
+                    const squareItem = {
+                      id: dataSquare.length,
+                      arrSquare: coordinatesShape,
+                    };
+                    setDataSquare((prevState) => [...prevState, squareItem]);
+                    new window.google.maps.event.addListener(
+                      newShape,
+                      "click",
+                      () => {
+                        setSelection(newShape);
+                      },
+                    );
+                  }
                 },
               );
             }
@@ -293,15 +341,15 @@ const GoogleMapWrap = connect(
         );
 
         // --------------click button delete shape---------------
-        window.google.maps.event.addDomListener(
-          document.querySelector(".delete-button"),
-          "click",
-          () => {
-            if (selectedShape) {
-              selectedShape.setMap(null);
-            }
-          },
-        );
+        // window.google.maps.event.addDomListener(
+        //   document.querySelector(".delete-button"),
+        //   "click",
+        //   () => {
+        //     if (selectedShape) {
+        //       selectedShape.setMap(null);
+        //     }
+        //   },
+        // );
       }, []);
       // --------------------------------------------------------
 
@@ -317,23 +365,26 @@ const GoogleMapWrap = connect(
           );
         };
 
-        handleClickBtnNotUseTools("btn-marker");
-        handleClickBtnNotUseTools("btn-polyline");
-
-        const handleClickBtnUseTools = (classEl, data) => {
+        const handleClickBtnNotCheck = (classEl, data) => {
           return window.google.maps.event.addDomListener(
             document.querySelector(`.${classEl}`),
             "click",
             () => {
               if (data.isSelected) {
                 drawingManager.setMap(null);
+                drawingManager.setDrawingMode(null);
               }
             },
           );
         };
-        handleClickBtnUseTools("btn-polygon", getPolygon);
-        handleClickBtnUseTools("btn-square", getSquare);
-      }, []);
+
+        handleClickBtnNotUseTools("btn-marker");
+        handleClickBtnNotUseTools("btn-polyline");
+        handleClickBtnNotCheck("btn-polygon", getPolygon);
+        handleClickBtnNotCheck("btn-square", getSquare);
+        handleClickBtnNotCheck("btn-marker", getMarker);
+        handleClickBtnNotCheck("btn-polyline", getDataPolyline);
+      });
       // --------------------------------------------------------
 
       return (
@@ -396,21 +447,25 @@ const GoogleMapWrap = connect(
               alt="polygon"
             />
           </button>
-          {isSelectedPolygon ? (
-            <Polygon
-              ref={polygonRef}
-              // path={dataPolygon[0].arrPolygon}
-              options={{
-                strokeColor: "#FF0000",
-                strokeOpacity: 0.8,
-                strokeWeight: 2,
-                fillColor: "#FF0000",
-                fillOpacity: 0.35,
-                editable: true,
-                draggable: true,
-              }}
-            />
-          ) : null}
+          {isSelectedPolygon
+            ? dataPolygon.map((polygon) => {
+                return (
+                  <Polygon
+                    id={polygon.id}
+                    path={polygon.arrPolygon}
+                    options={{
+                      strokeColor: "#FF0000",
+                      strokeOpacity: 0.8,
+                      strokeWeight: 2,
+                      fillColor: "#46c097fd",
+                      fillOpacity: 0.35,
+                      editable: true,
+                      draggable: true,
+                    }}
+                  />
+                );
+              })
+            : null}
 
           {/* ------------------button box--------------------- */}
           <button
@@ -420,14 +475,28 @@ const GoogleMapWrap = connect(
             <i className="fas fa-vector-square"></i>
           </button>
 
+          {isSelectedSquare && dataSquare.length !== 0
+            ? dataSquare.map((square) => (
+                <Polygon
+                  id={square.id}
+                  path={square.arrSquare}
+                  options={{
+                    strokeColor: "#FF0000",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillColor: "#46c097fd",
+                    fillOpacity: 0.35,
+                    editable: true,
+                    draggable: true,
+                  }}
+                />
+              ))
+            : null}
+
           {/* ------------------button delete--------------------- */}
-          <button
-            className={`delete-button ${
-              isSelectedSquare || isSelectedPolygon ? "" : "hidden"
-            }`}
-          >
+          {/* <button className={`delete-button ${isShowDel ? "" : "hidden"}`}>
             Delete Shape
-          </button>
+          </button> */}
         </GoogleMap>
       );
     }),
