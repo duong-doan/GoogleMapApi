@@ -101,7 +101,7 @@ const reducerGoogleMap = (state = initState, action) => {
           item.data.push(polygonItem);
         }
       });
-      console.log("reducer", filterDataPolygon);
+      console.log(filterDataPolygon);
       return {
         ...state,
         data: filterDataPolygon,
@@ -129,7 +129,7 @@ const reducerGoogleMap = (state = initState, action) => {
           item.data.push(SquareItem);
         }
       });
-      console.log(filterDataSquare);
+      console.log("reducer", filterDataSquare);
       return {
         ...state,
         data: filterDataSquare,

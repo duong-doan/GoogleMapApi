@@ -72,34 +72,9 @@ const GoogleMapWrap = connect(
       const [isSelectedSquare, setIsSelectedSquare] = useState(
         getSquare.isSelected,
       );
-      console.log(dataPolygon);
 
       //------ select shape and switch shape----
       let drawingManager = new window.google.maps.drawing.DrawingManager();
-      let selectedShape;
-      const setSelection = (shape) => {
-        clearSelection();
-        selectedShape = shape;
-        if (selectedShape) {
-          setIsShowDel(true);
-        }
-        shape.setOptions({
-          fillColor: "#7a3a4d",
-          draggable: true,
-          editable: true,
-        });
-      };
-      const clearSelection = () => {
-        if (selectedShape) {
-          selectedShape.setOptions({
-            editable: false,
-            draggable: false,
-            fillColor: "#333",
-          });
-          selectedShape = null;
-        }
-      };
-      // --------------------------------------------------------------
 
       //--------- update status switch button------
       useEffect(() => {
@@ -214,10 +189,10 @@ const GoogleMapWrap = connect(
                         id: dataPolygon.length,
                         arrPolygon: coordinatesPolygonItem,
                       };
-                      setDataPolygon((prevState) => [
-                        ...prevState,
-                        polygonItem,
-                      ]);
+                      // setDataPolygon((prevState) => [
+                      //   ...prevState,
+                      //   polygonItem,
+                      // ]);
                       console.log("view", dataPolygon);
                     }
 
@@ -225,31 +200,13 @@ const GoogleMapWrap = connect(
                     var newShape = event.overlay;
                     newShape.type = event.type;
                     newShape.setMap(null);
-                    new window.google.maps.event.addListener(
-                      newShape,
-                      "click",
-                      () => {
-                        setSelection(newShape);
-                      },
-                    );
                   }
                 },
               );
             }
           },
         );
-
-        // --------------click button delete shape---------------
-        // window.google.maps.event.addDomListener(
-        //   document.querySelector(".delete-button"),
-        //   "click",
-        //   () => {
-        //     if (selectedShape) {
-        //       selectedShape.setMap(null);
-        //     }
-        //   },
-        // );
-      }, []);
+      });
 
       // -------------update button square using tool draw in gg map-------
       useEffect(() => {
@@ -283,7 +240,6 @@ const GoogleMapWrap = connect(
                 function (event) {
                   if (event.type === "rectangle") {
                     drawingManager.setMap(null);
-                    drawingManager.setDrawingMode(null);
                     var newShape = event.overlay;
                     newShape.type = event.type;
                     newShape.setMap(null);
@@ -326,31 +282,13 @@ const GoogleMapWrap = connect(
                       arrSquare: coordinatesShape,
                     };
                     setDataSquare((prevState) => [...prevState, squareItem]);
-                    new window.google.maps.event.addListener(
-                      newShape,
-                      "click",
-                      () => {
-                        setSelection(newShape);
-                      },
-                    );
                   }
                 },
               );
             }
           },
         );
-
-        // --------------click button delete shape---------------
-        // window.google.maps.event.addDomListener(
-        //   document.querySelector(".delete-button"),
-        //   "click",
-        //   () => {
-        //     if (selectedShape) {
-        //       selectedShape.setMap(null);
-        //     }
-        //   },
-        // );
-      }, []);
+      });
       // --------------------------------------------------------
 
       //----------- switch button drawing gg map---------
@@ -478,6 +416,9 @@ const GoogleMapWrap = connect(
           {isSelectedSquare && dataSquare.length !== 0
             ? dataSquare.map((square) => (
                 <Polygon
+                  onClick={() => {
+                    console.log(square.id);
+                  }}
                   id={square.id}
                   path={square.arrSquare}
                   options={{
