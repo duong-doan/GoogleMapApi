@@ -63,31 +63,35 @@ const GoogleMapWrap = connect(
         getPolyline.isSelected,
       );
 
-      const [dataPolygon, setDataPolygon] = useState([]);
+      const [dataPolygon, setDataPolygon] = useState(getPolygon.data);
       const [isSelectedPolygon, setIsSelectedPolygon] = useState(
         getPolygon.isSelected,
       );
 
-      const [dataSquare, setDataSquare] = useState([]);
+      const [dataSquare, setDataSquare] = useState(getSquare.data);
       const [isSelectedSquare, setIsSelectedSquare] = useState(
         getSquare.isSelected,
       );
-
+      console.log(dataSquare);
       //------ select shape and switch shape----
       let drawingManager = new window.google.maps.drawing.DrawingManager();
 
       //--------- update status switch button------
+
       useEffect(() => {
-        setIsSelectedMarker(getMarker.isSelected);
-        setIsSelectedPolyline(getPolyline.isSelected);
-        setIsSelectedPolygon(getPolygon.isSelected);
-        setIsSelectedSquare(getSquare.isSelected);
-      }, [
-        getMarker.isSelected,
-        getPolyline.isSelected,
-        getPolygon.isSelected,
-        getSquare.isSelected,
-      ]);
+        setDataSquare(getSquare.data);
+        setDataPolygon(getPolygon.data);
+      }, [getSquare.data, getPolygon.data]);
+
+      useEffect(() => {
+        const handleClickMouseRight = (e) => {
+          if (e.button === 2) {
+            drawingManager.setDrawingMode(null);
+          }
+        };
+
+        window.addEventListener("mousedown", handleClickMouseRight);
+      });
       // ----------------------------------------------------------------
 
       // -------click mouse choose positions in google map-----
@@ -141,153 +145,171 @@ const GoogleMapWrap = connect(
       };
       // -----------------------------------------------------------------
 
+      useEffect(() => {
+        setIsSelectedMarker(getMarker.isSelected);
+        setIsSelectedPolyline(getPolyline.isSelected);
+        setIsSelectedPolygon(getPolygon.isSelected);
+        setIsSelectedSquare(getSquare.isSelected);
+      }, [
+        getMarker.isSelected,
+        getPolyline.isSelected,
+        getPolygon.isSelected,
+        getSquare.isSelected,
+      ]);
+
       //------------update button polygon using tool draw in gg map---------
       useEffect(() => {
+        const handleBtnPolygon = () => {
+          if (!isSelectedPolygon) {
+            drawingManager.setOptions({
+              drawingControlOptions: {
+                position: window.google.maps.ControlPosition.TOP_CENTER,
+                drawingModes: [window.google.maps.drawing.OverlayType.POLYGON],
+              },
+            });
+            drawingManager.setDrawingMode(
+              window.google.maps.drawing.OverlayType.POLYGON,
+            );
+            drawingManager.setOptions({
+              drawingControl: false,
+            });
+            drawingManager.setMap(
+              mapRef.current.context
+                .__SECRET_MAP_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
+            );
+
+            // function implement when after drawing complete
+
+            window.google.maps.event.addListener(
+              drawingManager,
+              "overlaycomplete",
+              handleOverlayComplete,
+            );
+          }
+        };
+
+        const handleOverlayComplete = (event) => {
+          if (event.type === "polygon") {
+            // get coordinate and dispatch
+            drawingManager.setMap(null);
+            const coordinatesPolygonItem = event.overlay.getPath().getArray();
+
+            dispatch(pushPolygonItemAction("polygon", coordinatesPolygonItem));
+            const polygonItem = {
+              id: dataPolygon.length,
+              arrPolygon: coordinatesPolygonItem,
+            };
+            setDataPolygon((prevState) => [...prevState, polygonItem]);
+
+            // make a new shape
+            var newShape = event.overlay;
+            newShape.type = event.type;
+            newShape.setMap(null);
+          }
+        };
+
         window.google.maps.event.addDomListener(
           document.querySelector(".btn-polygon"),
           "click",
-          () => {
-            if (!isSelectedPolygon) {
-              drawingManager.setOptions({
-                drawingControlOptions: {
-                  position: window.google.maps.ControlPosition.TOP_CENTER,
-                  drawingModes: [
-                    window.google.maps.drawing.OverlayType.POLYGON,
-                  ],
-                },
-              });
-              drawingManager.setDrawingMode(
-                window.google.maps.drawing.OverlayType.POLYGON,
-              );
-              drawingManager.setOptions({
-                drawingControl: false,
-              });
-              drawingManager.setMap(
-                mapRef.current.context
-                  .__SECRET_MAP_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
-              );
-
-              // function implement when after drawing complete
-              window.google.maps.event.addListener(
-                drawingManager,
-                "overlaycomplete",
-                function (event) {
-                  if (event.type === "polygon") {
-                    // get coordinate and dispatch
-                    drawingManager.setMap(null);
-                    drawingManager.setDrawingMode(null);
-
-                    const coordinatesPolygonItem = event.overlay
-                      .getPath()
-                      .getArray();
-
-                    dispatch(
-                      pushPolygonItemAction("polygon", coordinatesPolygonItem),
-                    );
-                    if (coordinatesPolygonItem) {
-                      const polygonItem = {
-                        id: dataPolygon.length,
-                        arrPolygon: coordinatesPolygonItem,
-                      };
-                      // setDataPolygon((prevState) => [
-                      //   ...prevState,
-                      //   polygonItem,
-                      // ]);
-                      console.log("view", dataPolygon);
-                    }
-
-                    // make a new shape
-                    var newShape = event.overlay;
-                    newShape.type = event.type;
-                    newShape.setMap(null);
-                  }
-                },
-              );
-            }
-          },
+          handleBtnPolygon,
         );
+
+        return () => {
+          window.google.maps.event.clearListeners("click", handleBtnPolygon);
+          window.google.maps.event.clearListeners(
+            "overlaycomplete",
+            handleOverlayComplete,
+          );
+        };
       });
 
       // -------------update button square using tool draw in gg map-------
       useEffect(() => {
+        const handleBtnSquare = () => {
+          if (!isSelectedSquare) {
+            drawingManager.setOptions({
+              drawingControlOptions: {
+                position: window.google.maps.ControlPosition.TOP_CENTER,
+                drawingModes: [
+                  window.google.maps.drawing.OverlayType.RECTANGLE,
+                ],
+              },
+            });
+            drawingManager.setDrawingMode(
+              window.google.maps.drawing.OverlayType.RECTANGLE,
+            );
+            drawingManager.setOptions({
+              drawingControl: false,
+            });
+            drawingManager.setMap(
+              mapRef.current.context
+                .__SECRET_MAP_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
+            );
+
+            window.google.maps.event.addListener(
+              drawingManager,
+              "overlaycomplete",
+              handleOverlayComplete,
+            );
+          }
+        };
+
+        const handleOverlayComplete = (event) => {
+          if (event.type === "rectangle") {
+            drawingManager.setMap(null);
+            var newShape = event.overlay;
+            newShape.type = event.type;
+            newShape.setMap(null);
+
+            const SW = event.overlay.getBounds().getSouthWest();
+            const NE = event.overlay.getBounds().getNorthEast();
+            const pointSW = {
+              lat: SW.lat(),
+              lng: SW.lng(),
+            };
+            const pointNE = {
+              lat: NE.lat(),
+              lng: NE.lng(),
+            };
+            const getPointSE = new window.google.maps.LatLng(
+              SW.lat(),
+              NE.lng(),
+            );
+            const pointSE = {
+              lat: getPointSE.lat(),
+              lng: getPointSE.lng(),
+            };
+            const getPointNW = new window.google.maps.LatLng(
+              NE.lat(),
+              SW.lng(),
+            );
+            const pointNW = {
+              lat: getPointNW.lat(),
+              lng: getPointNW.lng(),
+            };
+            const coordinatesShape = [pointNW, pointSW, pointSE, pointNE];
+            dispatch(pushSquareItemAction("square", coordinatesShape));
+            const squareItem = {
+              id: dataSquare.length,
+              arrSquare: coordinatesShape,
+            };
+            setDataSquare((prevState) => [...prevState, squareItem]);
+          }
+        };
+
         window.google.maps.event.addDomListener(
           document.querySelector(".btn-square"),
           "click",
-          () => {
-            if (!isSelectedSquare) {
-              drawingManager.setOptions({
-                drawingControlOptions: {
-                  position: window.google.maps.ControlPosition.TOP_CENTER,
-                  drawingModes: [
-                    window.google.maps.drawing.OverlayType.RECTANGLE,
-                  ],
-                },
-              });
-              drawingManager.setDrawingMode(
-                window.google.maps.drawing.OverlayType.RECTANGLE,
-              );
-              drawingManager.setOptions({
-                drawingControl: false,
-              });
-              drawingManager.setMap(
-                mapRef.current.context
-                  .__SECRET_MAP_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,
-              );
-
-              window.google.maps.event.addListener(
-                drawingManager,
-                "overlaycomplete",
-                function (event) {
-                  if (event.type === "rectangle") {
-                    drawingManager.setMap(null);
-                    var newShape = event.overlay;
-                    newShape.type = event.type;
-                    newShape.setMap(null);
-
-                    const SW = event.overlay.getBounds().getSouthWest();
-                    const NE = event.overlay.getBounds().getNorthEast();
-                    const pointSW = {
-                      lat: SW.lat(),
-                      lng: SW.lng(),
-                    };
-                    const pointNE = {
-                      lat: NE.lat(),
-                      lng: NE.lng(),
-                    };
-                    const getPointSE = new window.google.maps.LatLng(
-                      SW.lat(),
-                      NE.lng(),
-                    );
-                    const pointSE = {
-                      lat: getPointSE.lat(),
-                      lng: getPointSE.lng(),
-                    };
-                    const getPointNW = new window.google.maps.LatLng(
-                      NE.lat(),
-                      SW.lng(),
-                    );
-                    const pointNW = {
-                      lat: getPointNW.lat(),
-                      lng: getPointNW.lng(),
-                    };
-                    const coordinatesShape = [
-                      pointNW,
-                      pointSW,
-                      pointSE,
-                      pointNE,
-                    ];
-                    dispatch(pushSquareItemAction("square", coordinatesShape));
-                    const squareItem = {
-                      id: dataSquare.length,
-                      arrSquare: coordinatesShape,
-                    };
-                    setDataSquare((prevState) => [...prevState, squareItem]);
-                  }
-                },
-              );
-            }
-          },
+          handleBtnSquare,
         );
+
+        return () => {
+          window.google.maps.event.clearListeners("click", handleBtnSquare);
+          window.google.maps.event.clearListeners(
+            "overlaycomplete",
+            handleOverlayComplete,
+          );
+        };
       });
       // --------------------------------------------------------
 
@@ -310,7 +332,6 @@ const GoogleMapWrap = connect(
             () => {
               if (data.isSelected) {
                 drawingManager.setMap(null);
-                drawingManager.setDrawingMode(null);
               }
             },
           );
